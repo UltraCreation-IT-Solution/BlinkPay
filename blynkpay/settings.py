@@ -42,6 +42,7 @@ INSTALLED_APPS = [
     'pay',
     'rest_framework',
     'import_export',
+    'phonenumber_field',
 ]
 
 MIDDLEWARE = [
@@ -128,5 +129,7 @@ STATIC_URL = '/static/'
 # https://docs.djangoproject.com/en/3.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+PHONENUMBER_DEFAULT_REGION = 'IN'
 
 django_heroku.settings(locals())
