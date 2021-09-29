@@ -6,9 +6,18 @@ from rest_framework import status
 from rest_framework.decorators import api_view
 from .serializers import *
 from selenium.webdriver.support.ui import Select
+from selenium.common.exceptions import UnexpectedAlertPresentException
 from selenium import webdriver
 import time
 import requests
+import urllib
+from rest_framework.parsers import FileUploadParser,ParseError
+from .file import *
+from PIL import Image
+import os
+import easyocr
+import cv2
+#import pytesseract
 
 
 # Create your views here.
@@ -74,22 +83,102 @@ def automation(request,card_id):
                 select_day = web.find_element_by_xpath('//*[@id="ui-datepicker-div"]/table/tbody/tr[{j}]/td[{i}]/a'.format(j=i+1,i=j+1))
                 select_day.click()
 
-    mobile_number = data['mobile']
+    mobile_number = int(data['mobile'])
     Cust_mobile_input = web.find_element_by_xpath('//*[@id="mobileNo"]')
     Cust_mobile_input.send_keys(mobile_number)
 
     email = data['email']
     Cust_email_input = web.find_element_by_xpath('//*[@id="emailId"]')
     Cust_email_input.send_keys(email)
-
-
-    time.sleep(5)
+    while True:
+        try:
+            cap = web.find_element_by_id('captchaImage')
+            cap.screenshot('capcha.png')
+            time.sleep(2)
+            reader=easyocr.Reader(['en'])
+            result=reader.readtext('capcha.png',detail=0)
+            Cust_capcha = web.find_element_by_xpath('//*[@id="captchaValue"]')
+            Cust_capcha.send_keys(result[0])
+            time.sleep(1)
+            submit_btn = web.find_element_by_xpath('//*[@id="frmFeeParams"]/div[3]/button[1]')
+            submit_btn.click()
+            time.sleep(2)
+            confirm_btn = web.find_element_by_xpath('//*[@id="collect"]/div[3]/button[1]')
+            confirm_btn.click()
+            break
+        except:
+            #obj = web.switch_to.alert
+            #obj.accept()
+            print('hello')
+            continue
+        
+    
+    
+    time.sleep(1)
+    card_btn = web.find_element_by_xpath('//*[@id="payment"]/div[2]/div/div[3]/div/a')
+    card_btn.click()
+    card_no = data['card_no']
+    card_no_input = web.find_element_by_xpath('//*[@id="cardNumber"]')
+    card_no_input.send_keys(card_no)
+    time.sleep(1)
+    card_month = data["month"]
+    select_month = Select(web.find_element_by_xpath('//*[@id="expMnthSelect"]'))
+    select_month.select_by_value(str(card_month))
+    card_year = data["year"]
+    select_year = Select(web.find_element_by_xpath('//*[@id="expYearSelect"]'))
+    select_year.select_by_value(str(card_year))
+    card_holder_name = data['name']
+    card_holder_name_input = web.find_element_by_xpath('//*[@id="cardholderName"]')
+    card_holder_name_input.send_keys(card_holder_name)
+    time.sleep(1)
+    cvv_no = data['cvv']
+    cvv_input = web.find_element_by_xpath('//*[@id="cardCvv"]')
+    cvv_input.send_keys(cvv_no)
+    time.sleep(2)
+    cap = web.find_element_by_xpath('//*[@id="captcha_image"]')
+    cap.screenshot('capcha1.png')
+    time.sleep(1)
+    img = cv2.imread('capcha1.png')
+    img = cv2.resize(img, None, fx=1.2, fy=1.2, interpolation=cv2.INTER_CUBIC)
+    img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    reader=easyocr.Reader(['en'])
+    result=reader.readtext(img,detail=0)
+    capdata = result[0]
+    capdata = capdata.replace(" ","")
+    Cust_capcha = web.find_element_by_xpath('//*[@id="passline"]')
+    Cust_capcha.send_keys(capdata)
+    time.sleep(1)
+    time.sleep(50)
     return Response(data = data,status = status.HTTP_200_OK)
 
 
+   
 
+class FileUploadView(APIView):
+    parser_class = [FileUploadParser]
+    # permission_classes = [IsAuthenticated]
+
+    def post(self, request, format=None):
+        if "file" not in request.data:
+            raise ParseError("FIle should be provided")
+        file_obj = request.data["file"]
+        filetype = request.data["filetype"]
+        name = request.data["name"]
+        try:
+            url, ext = upload(file_obj, filetype, name)
+        except Exception as e:
+            raise ValidationError(detail="Unable to upload file. Reason - {}".format(e), code=400)
+        return Response(
+            {
+                "status": True,
+                "message": "File Uploaded",
+                "url": url,
+            },
+            status=201,
+        )
 
     
-    
+
+
     
     

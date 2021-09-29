@@ -8,7 +8,7 @@ class Payment_details(models.Model):
     name            = models.CharField(max_length=50 , verbose_name="Name")
     txt_id          = models.CharField(max_length=50, verbose_name="Text ID")
     txt_count       = models.IntegerField(verbose_name="Text Count")
-    mobile          = PhoneNumberField(verbose_name="Phone NO")
+    mobile          = models.CharField(max_length=10, verbose_name="Phone NO")
     email           = models.EmailField(verbose_name="Email")
     amount          = models.PositiveIntegerField(verbose_name="Amount")
     dob             = models.CharField(max_length=20,verbose_name="Date of Birth" )
